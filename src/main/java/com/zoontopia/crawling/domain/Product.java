@@ -16,8 +16,10 @@ public class Product {
     private String platform; // e.g., "NAVER"
     private String keyword;
     private String productName;
-    private String price;
+    private Integer price;
+    private Integer unitPrice;
     private String seller;
     private String productUrl;
+    private String crawledDate; // 'YYYY-MM-DD' 형식
     private LocalDateTime crawledAt;
 }
