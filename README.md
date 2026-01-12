@@ -1,72 +1,126 @@
-# Gemini Data Crawling Project
+# 🕷️ AI-Powered Intelligent Crawler
 
-이 프로젝트는 **Playwright**를 사용하여 웹 페이지의 HTML 구조를 추출하고, Google **Gemini AI**를 활용하여 비정형 HTML 데이터에서 구조화된 상품 정보(JSON)를 파싱하는 지능형 크롤링 애플리케이션입니다.
+이 프로젝트는 **Playwright**의 강력한 브라우저 자동화 기능과 **Google Gemini AI**의 지능형 파싱 능력을 결합한 차세대 웹 크롤링 솔루션입니다.
+복잡한 웹 페이지의 구조(HTML)를 AI가 직접 분석하여 필요한 데이터를 추출하므로, 기존 크롤러처럼 CSS Selector나 XPath를 일일이 관리할 필요가 없습니다.
 
-## 🚀 주요 기능
+## 🚀 핵심 기능 (Key Features)
 
-- **지능형 파싱:** 복잡한 CSS Selector나 XPath 하드코딩 없이, HTML 전체를 Gemini에게 전달하여 필요한 데이터(상품명, 가격, 판매자 등)를 추출합니다.
-- **동적 웹 크롤링:** **Playwright**를 사용하여 JavaScript로 렌더링되는 동적 페이지(네이버 쇼핑 등)를 완벽하게 크롤링합니다.
-- **사람 같은 스크롤링:** 봇 탐지를 우회하고 지연 로딩 데이터를 확보하기 위해 점진적이고 자연스러운 스크롤 로직을 구현했습니다.
-- **대용량 처리:** Gemini API의 출력 토큰 제한을 최적화하여 긴 상품 목록도 한 번에 처리합니다.
-- **데이터 저장:** 추출된 데이터는 **MongoDB**에 저장되어 관리됩니다.
+### 1. 🤖 AI 기반 지능형 파싱 (Zero-Selector Parsing)
+- HTML 구조가 변경되어도 크롤러가 깨지지 않습니다.
+- Gemini AI에게 HTML 통째로 던지고 "상품명, 가격, 판매자 찾아줘"라고 요청하면, 정확한 JSON 데이터로 변환해줍니다.
+- **Minified JSON & Auto-Repair:** AI 응답 토큰을 절약하기 위해 최적화된 프롬프트를 사용하며, 응답이 중간에 끊겨도 자동으로 복구하여 데이터를 살려냅니다.
 
-## 🛠 기술 스택
+### 2. 🕵️ 강력한 스텔스 모드 (Advanced Stealth)
+봇 탐지 시스템(Anti-Bot)을 우회하기 위한 첨단 기술이 적용되었습니다.
+- **Fingerprint Spoofing:** `stealth.min.js`를 런타임에 주입하여 `navigator.webdriver` 숨김, Chrome 객체 모방, 플러그인/언어 정보 위조 등을 수행합니다.
+- **Human-Like Behavior:** 
+  - 기계적인 타이핑 대신 오타를 내거나 속도를 조절하는 타이핑 시뮬레이션
+  - 클릭 전 마우스 호버(Hover) 및 랜덤 딜레이 적용
+  - "가격비교 더보기" 등 동적 요소 자동 탐지 및 상호작용
+- **Context-Level Injection:** 새 탭(팝업)이 열려도 스텔스 상태가 유지되도록 브라우저 컨텍스트 레벨에서 스크립트를 주입합니다.
 
-- **Language:** Java 25
-- **Framework:** Spring Boot 3.5.9
-- **AI Integration:** Spring AI (Google Gemini 2.5 Flash)
-- **Crawling:** Microsoft Playwright 1.57.0
-- **Database:** MongoDB
-- **Build Tool:** Gradle
+### 3. 🌐 멀티 플랫폼 지원
+현재 다음 플랫폼에 대한 전용 크롤러가 구현되어 있습니다.
+- **네이버 쇼핑 (Naver):** 무한 스크롤, 가격비교 팝업 처리 등 복잡한 로직 완벽 대응
+- **마켓컬리 (Kurly):** 검색어 입력 및 엔터 처리, 로그인 없는 공개 데이터 수집
+- **금천미트 (GeumCheonMeat):** B2B 축산물 시세 데이터 수집
 
-## ⚙️ 설정 및 실행 방법
+### 4. ⚡ 고성능 & 안정성
+- **스마트 대기 전략:** 무작정 기다리는 `Thread.sleep` 대신 `DOMCONTENTLOADED` 이벤트와 스마트한 타임아웃을 조합하여 속도와 안정성을 동시에 잡았습니다.
+- **대용량 데이터 처리:** 스크롤을 통해 지연 로딩되는(Lazy Loading) 데이터까지 모두 확보한 후 AI에게 전달합니다.
 
-### 1. 환경 변수 설정
-프로젝트 루트에 `.env` 파일을 생성하거나 시스템 환경 변수로 다음 값을 설정해야 합니다.
+## 🛠 기술 스택 (Tech Stack)
 
-```properties
-GOOGLE_PROJECT_ID=your-google-project-id
-GOOGLE_API_KEY=your-gemini-api-key
+| Category | Technology | Version |
+|----------|------------|---------|
+| **Language** | Java | 25 (LTS) |
+| **Framework** | Spring Boot | 3.5.9 |
+| **AI** | Spring AI + Google Gemini | 1.1.2 (Flash 2.0) |
+| **Automation** | Microsoft Playwright | 1.57.0 |
+| **Database** | MongoDB | Latest |
+| **Build** | Gradle | 8.x |
+
+## ⚙️ 시작하기 (Getting Started)
+
+### 1. 필수 환경 변수 설정
+Google Gemini API 사용을 위해 API 키가 필요합니다. `application.yml` 또는 환경 변수로 설정하세요.
+
+```yaml
+spring:
+  ai:
+    gemini:
+      api-key: ${GOOGLE_API_KEY} # 시스템 환경 변수 설정 권장
+      chat:
+        options:
+          model: gemini-2.0-flash-exp # 속도와 가성비가 좋은 모델 권장
 ```
 
-### 2. MongoDB 설정
-`application.yml` 또는 `compose.yaml`을 통해 MongoDB가 실행 중이어야 합니다.
-기본 설정:
-- URI: `mongodb://admin:1234@localhost:27017/crawling_db?authSource=admin`
+### 2. MongoDB 실행
+Docker Compose를 사용하여 손쉽게 실행할 수 있습니다.
+```bash
+docker-compose up -d
+```
 
 ### 3. 애플리케이션 실행
 ```bash
 ./gradlew bootRun
 ```
 
-## 📡 API 사용법
+## 📡 API 사용 가이드
 
-### 상품 크롤링 요청
-특정 키워드로 상품을 검색하고 크롤링을 수행합니다.
+크롤링은 REST API를 통해 트리거됩니다.
 
-- **URL:** `POST /api/crawl/products` (예시 경로, 실제 컨트롤러 확인 필요)
-- **Body:**
-  ```json
+### 상품 수집 요청 (POST)
+
+**Endpoint:** `POST /api/crawl/{platform}?keyword={keyword}`
+
+| 파라미터 | 설명 | 예시 값 |
+|---|---|---|
+| `platform` | 크롤링 대상 플랫폼 코드 | `naver`, `kurly`, `gcmeat` |
+| `keyword` | 검색할 상품 키워드 | `삼겹살`, `노트북` |
+
+**요청 예시 (cURL):**
+```bash
+# 네이버 쇼핑에서 '게이밍 노트북' 검색
+curl -X POST "http://localhost:8080/api/crawl/naver?keyword=게이밍노트북"
+
+# 마켓컬리에서 '파스타' 검색
+curl -X POST "http://localhost:8080/api/crawl/kurly?keyword=파스타"
+```
+
+**응답 예시 (JSON):**
+```json
+[
   {
-    "keyword": "노트북",
-    "platform": "NAVER"
-  }
-  ```
+    "id": "65a1b2c3d4e5f6...",
+    "platform": "naver",
+    "keyword": "게이밍노트북",
+    "productName": "ASUS TUF Gaming F15",
+    "price": 1250000,
+    "unitPrice": 0,
+    "seller": "ASUS 공식스토어",
+    "productUrl": "https://search.shopping.naver.com/...",
+    "crawledAt": "2026-01-12T10:00:00"
+  },
+  ...
+]
+```
 
 ## 📁 프로젝트 구조
 ```
 src/main/java/com/zoontopia/crawling
-├── controller      # API 엔드포인트 처리
-├── domain          # MongoDB 엔티티 (Product)
-├── repository      # MongoDB 리포지토리
+├── controller      
+│   └── CrawlingController.java   # API 진입점
 ├── service
-│   ├── crawler     # Playwright 기반 크롤러 (NaverShoppingCrawler)
-│   └── GeminiParsingService.java # Gemini AI 파싱 로직
-└── CrawlingApplication.java
+│   ├── CrawlingService.java      # 크롤러 팩토리 및 비즈니스 로직
+│   ├── GeminiParsingService.java # HTML -> JSON 변환 (AI, 복구 로직 포함)
+│   └── crawler                   # 플랫폼별 크롤러 구현체
+│       ├── ShoppingCrawler.java  # 공통 인터페이스 (Stealth 유틸 포함)
+│       ├── NaverShoppingCrawler.java
+│       ├── MarketKurlyCrawler.java
+│       └── GeumCheonMeatCrawler.java
+├── domain          
+│   └── Product.java              # MongoDB 문서 매핑 클래스
+└── resources
+    └── stealth.min.js            # 봇 탐지 우회용 주입 스크립트
 ```
-
-## 📝 주요 로직 설명
-1. **HTML 추출:** `NaverShoppingCrawler`가 브라우저를 띄워 스크롤하며 페이지 로딩을 완료하고 HTML을 가져옵니다.
-2. **AI 파싱:** `GeminiParsingService`가 HTML을 Gemini에 전송합니다. 프롬프트를 통해 "상품명", "가격", "단가" 등을 JSON 포맷으로 추출하도록 지시합니다.
-3. **데이터 정제:** AI 응답(JSON)을 파싱하여 `Product` 객체로 변환하고, 날짜 포맷(`YYYY-MM-DD`) 및 숫자형 데이터를 정규화합니다.
-4. **저장:** 최종 결과물을 MongoDB에 저장합니다.
