@@ -16,7 +16,7 @@ import java.util.List;
 public class GeumCheonMeatCrawler implements ShoppingCrawler {
 
     private final GeminiParsingService geminiParsingService;
-    private static final String NAVER_SHOPPING_URL = "https://www.ekcm.co.kr/";
+    private static final String GEUMCHOEN_MEAT_URL = "https://www.ekcm.co.kr/";
 
     @Override
     public List<Product> searchProducts(String keyword) {
@@ -38,7 +38,7 @@ public class GeumCheonMeatCrawler implements ShoppingCrawler {
             // [중요] 봇 감지 우회 스크립트 주입 (webdriver 속성 제거)
             page.addInitScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
 
-            page.navigate(NAVER_SHOPPING_URL);
+            page.navigate(GEUMCHOEN_MEAT_URL);
 
             // 사람처럼 보이게 하기 위해 잠시 대기
             page.waitForTimeout(2000);
