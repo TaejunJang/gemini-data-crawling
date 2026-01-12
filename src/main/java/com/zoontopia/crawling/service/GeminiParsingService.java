@@ -29,30 +29,25 @@ public class GeminiParsingService {
 
         String prompt = """
                 당신은 데이터 추출 전문가입니다.
-                쇼핑 검색 결과 페이지의 HTML 콘텐츠를 제공해 드릴 것입니다.
-                당신의 임무는 이 HTML에서 상품 정보를 추출하는 것입니다.
+                제공된 HTML에서 상품 정보를 추출하여 **Minified JSON 배열** 형식으로 반환하세요.
+                
+                ### 추출 필드:
+                - productName (문자열)
+                - price (정수형 숫자만, 예: 10000)
+                - unitPrice (정수형 숫자만, 예: 100g당 1000원이면 1000)
+                - seller (문자열)
+                - productUrl (문자열)
 
-                목록에 있는 각 상품에 대해 다음 필드를 추출해 주세요:
-                - productName: 상품명 또는 제목
-                - price: 상품 가격 (예: "10,000원") 숫자형으로 변환
-                - unitPrice: 단가 (예: "100g당 1,000원" 또는 "1개당 500원 또는 kg당 1000원"), HTML에서 단가 정보를 찾을 수 있는 경우에만 추출하세요 숫자형으로 변환.
-                - seller: 판매자 또는 쇼핑몰 이름
-                - productUrl: 상품 상세 페이지 링크
-
-                ### 제약 사항 (중요):
-                - 출력은 반드시 JSON 배열 `[...]`로 시작하고 끝나야 합니다.
-                - **마크다운 코드 블록(```json)을 절대 사용하지 마세요.**
-                - 어떠한 서술형 설명이나 인사말도 포함하지 마세요.
-                - **토큰 제한으로 인해 응답이 끊길 것 같으면, 마지막 상품 객체를 완전히 닫고(}) 배열을 닫아서(]) 유효한 JSON 형식을 유지하며 종료하세요.**
-                - HTML 내에 상품이 너무 많다면 상위 50개까지만 추출하세요. (응답 끊김 방지용)
+                ### 필수 제약 사항:
+                1. **최대 상위 40개의 상품만 추출하세요.** (매우 중요: 응답 길이 제한)
+                2. 공백과 줄바꿈을 제거한 **Minified JSON** 포맷으로 응답하세요.
+                3. 마크다운(```json)을 사용하지 말고 순수 JSON 문자열만 반환하세요.
+                4. 설명이나 인사를 포함하지 마세요.
+                5. 응답이 길어져서 잘릴 것 같으면 마지막 완성된 객체까지만 출력하고 배열을 닫으세요.
                 
                 HTML 콘텐츠:
                 %s
                 """;
-
-        // Truncate HTML if it's too long to avoid token limits (Basic safeguard)
-        // In a real scenario, we might want to be smarter about this (e.g. only sending specific divs)
-        //String safeHtml = htmlContent.length() > 100000 ? htmlContent.substring(0, 100000) : htmlContent;
 
         String response = chatClientBuilder.build()
                 .prompt()
@@ -65,10 +60,22 @@ public class GeminiParsingService {
 
     private List<Product> convertJsonToProducts(String jsonResponse, String keyword, String platform) {
         List<Product> products = new ArrayList<>();
+        
+        // 1. JSON 정제 및 복구 시도
+        String cleanJson = jsonResponse.replace("```json", "").replace("```", "").trim();
+        
+        // 만약 JSON이 제대로 닫히지 않았다면 복구 시도
+        if (!cleanJson.endsWith("]")) {
+            log.warn("JSON response appears truncated. Attempting to repair...");
+            int lastCloseBrace = cleanJson.lastIndexOf("}");
+            if (lastCloseBrace != -1) {
+                // 마지막으로 닫힌 객체까지만 살리고 배열 닫기
+                cleanJson = cleanJson.substring(0, lastCloseBrace + 1) + "]";
+                log.info("Repaired JSON: {}", cleanJson);
+            }
+        }
+
         try {
-            // Clean up if Gemini adds markdown despite instructions
-            String cleanJson = jsonResponse.replace("```json", "").replace("```", "").trim();
-            
             List<Map<String, Object>> rawList = objectMapper.readValue(cleanJson, new TypeReference<>() {});
 
             for (Map<String, Object> map : rawList) {
@@ -85,8 +92,9 @@ public class GeminiParsingService {
                         .build());
             }
         } catch (IOException e) {
-            log.error("Failed to parse JSON from Gemini response: {}", jsonResponse, e);
-            throw new RuntimeException("JSON parsing error", e);
+            log.error("Failed to parse JSON from Gemini response. Raw: {}, Repaired: {}", jsonResponse, cleanJson, e);
+            // 복구 실패 시 빈 리스트 반환보다는 에러를 던지거나 부분 성공 처리
+            // 여기서는 안전하게 빈 리스트 반환 (필요시 수정)
         }
         return products;
     }

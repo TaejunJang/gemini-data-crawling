@@ -1,5 +1,6 @@
 package com.zoontopia.crawling.service.crawler;
 
+import com.microsoft.playwright.Page;
 import com.zoontopia.crawling.domain.Product;
 
 import java.util.List;
@@ -46,5 +47,24 @@ public interface ShoppingCrawler {
         cleaned = cleaned.replaceAll("\\s+", " ").trim();
         
         return cleaned;
+    }
+
+    default void humanLikeType(Page page, String keyword) {
+        // 1. 글자 하나씩 입력
+        for (char c : keyword.toCharArray()) {
+            page.keyboard().type(String.valueOf(c));
+
+            // 각 글자 사이의 지연 시간을 50ms ~ 250ms 사이로 랜덤하게 부여
+            long randomDelay = (long) (Math.random() * 200) + 50;
+            page.waitForTimeout(randomDelay);
+
+            // 2. 가끔 입력을 멈추고 고민하는 척 (10% 확률로 0.5초~1초 대기)
+            if (Math.random() < 0.1) {
+                page.waitForTimeout((long) (Math.random() * 500) + 500);
+            }
+        }
+
+        // 3. 입력을 마친 후 바로 엔터를 치지 않고 '확인'하는 텀 (0.7초 ~ 1.5초)
+        page.waitForTimeout((long) (Math.random() * 800) + 700);
     }
 }

@@ -2,6 +2,7 @@ package com.zoontopia.crawling.service.crawler;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import com.zoontopia.crawling.domain.Product;
 import com.zoontopia.crawling.service.GeminiParsingService;
 import lombok.RequiredArgsConstructor;
@@ -9,14 +10,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class GeumCheonMeatCrawler implements ShoppingCrawler {
+public class MarketKurlyCrawler implements ShoppingCrawler {
 
     private final GeminiParsingService geminiParsingService;
-    private static final String GEUMCHOEN_MEAT_URL = "https://www.ekcm.co.kr/";
+    private static final String MARKET_KURLY_URL = "https://www.kurly.com/main";
 
     @Override
     public List<Product> searchProducts(String keyword) {
@@ -26,18 +28,23 @@ public class GeumCheonMeatCrawler implements ShoppingCrawler {
             // 1. Headless를 false로 설정하여 테스트 (차단 확인용)
             // 실제 운영 시에도 slowMo를 추가하여 동작 사이에 간격을 줍니다.
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                    .setHeadless(true) // 차단될 때는 잠시 false로 두고 확인하세요
+                    .setHeadless(false) // 차단될 때는 잠시 false로 두고 확인하세요
                     .setSlowMo(100));   // 각 동작 사이에 0.1초씩 지연 발생
 
             BrowserContext context = browser.newContext(new Browser.NewContextOptions()
                     .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                    .setViewportSize(1920, 1080));
+                    .setViewportSize(1920, 1080)
+                    .setExtraHTTPHeaders(Map.of(
+                            "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+                            "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+                    )));
 
-            // [Stealth 모드 적용] context에 주입하여 모든 페이지에 적용
+            // [Stealth 모드 적용 - 중요 수정] 
+            // page가 아니라 context에 적용해야 팝업(새 탭)에서도 우회 기능이 유지됨
             try (java.io.InputStream is = getClass().getResourceAsStream("/stealth.min.js")) {
                 if (is != null) {
                     String stealthScript = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-                    context.addInitScript(stealthScript);
+                    context.addInitScript(stealthScript); // context에 주입
                     log.info("Stealth script injected to Context successfully.");
                 } else {
                     log.warn("Stealth script not found in resources!");
@@ -49,20 +56,32 @@ public class GeumCheonMeatCrawler implements ShoppingCrawler {
 
             Page page = context.newPage();
 
-            page.navigate(GEUMCHOEN_MEAT_URL);
+            // 1. 마켓컬리 접속
+            page.navigate(MARKET_KURLY_URL);
+            
+            // [수정] NETWORKIDLE은 광고/트래킹 스크립트로 인해 타임아웃 발생 가능성이 높음.
+            // 대신 DOMCONTENTLOADED 상태를 기다리고, 추가적으로 짧은 시간을 대기하여 안정성 확보.
+            page.waitForLoadState(LoadState.DOMCONTENTLOADED); 
+            page.waitForTimeout(1000); // 1초 정도 추가 안정화 대기
 
-            // 사람처럼 보이게 하기 위해 잠시 대기
-            page.waitForTimeout(2000);
+            // 2. 검색어 입력 (제공된 HTML의 placeholder 사용)
+            Locator searchInput = page.getByPlaceholder("검색어를 입력해주세요");
 
-            // 검색어 입력 시 한 글자씩 입력하는 효과 (사람처럼 보이게)
-            Locator searchInput = page.locator("#schText");
-            searchInput.click(); // 먼저 클릭
-            page.keyboard().type(keyword, new Keyboard.TypeOptions().setDelay(100)); // 0.1초 간격으로 타이핑
+            // 요소가 나타날 때까지 명시적으로 대기
+            searchInput.waitFor(new Locator.WaitForOptions().setTimeout(20000));
 
+            searchInput.click();
+
+            // 섬세한 타이핑 실행
+            humanLikeType(page, keyword);
+
+            // 마켓컬리는 보통 엔터키로 검색을 실행하므로 엔터 입력 추가
             page.keyboard().press("Enter");
 
-            // 3. 결과 로딩 및 스크롤 다운 (전체 상품 로딩)
+            // 검색 결과 페이지 로딩 대기
             page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+            page.waitForTimeout(2000); // 결과 렌더링 대기 시간을 조금 더 부여
+
             
             // 페이지 끝까지 스크롤하여 지연 로딩된 상품들 불러오기
             log.info("Scrolling down incrementally to load all products...");
@@ -124,13 +143,13 @@ public class GeumCheonMeatCrawler implements ShoppingCrawler {
             return geminiParsingService.parseHtmlToProducts(cleanedContent, keyword, getPlatform());
 
         } catch (Exception e) {
-            log.error("Error during GeumCheonMeat crawling", e);
+            log.error("Error during MarketKurly crawling", e);
             throw new RuntimeException("Crawling failed", e);
         }
     }
 
     @Override
     public String getPlatform() {
-        return "gcmeat";
+        return "kurly";
     }
 }
