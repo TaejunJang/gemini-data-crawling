@@ -1,3 +1,17 @@
 spring:
   application:
     name: crawling
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/crawling
+  ai:
+    gemini:
+      api-key: ${GEMINI_API_KEY}
+      chat:
+        options:
+          model: gemini-1.5-flash
+          temperature: 0.1
+
+logging:
+  level:
+    org.springframework.ai: DEBUG
